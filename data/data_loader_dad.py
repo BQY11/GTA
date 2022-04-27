@@ -186,8 +186,10 @@ class WADI(Dataset):
     def __read_data__(self):
         scaler = MinMaxScaler()
         if self.flag == 'train':
-            df_raw = pd.read_csv(os.path.join(self.root_path,
-                                            'WADI_14days_downsampled.csv'))
+            df_raw = pd.read_csv('WADI_14days_new.csv')
+
+#             df_raw = pd.read_csv(os.path.join(self.root_path,
+#                                             'WADI_14days_downsampled.csv'))
             if self.features=='M':
                 cols_data = df_raw.columns[1:]
                 df_data = df_raw[cols_data]
@@ -204,8 +206,9 @@ class WADI(Dataset):
             self.data_x = data
             self.data_y = data
         else:
-            df_raw = pd.read_csv(os.path.join(self.root_path,
-                                            'WADI_attackdata_downsampled.csv'))
+            df_raw = pd.read_csv('WADI_14days_new.csv')
+#             df_raw = pd.read_csv(os.path.join(self.root_path,
+#                                             'WADI_attackdata_downsampled.csv'))
 
             border1s = [0, 0, 0]
             border2s = [None, len(df_raw)//4, len(df_raw)]
