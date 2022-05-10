@@ -156,8 +156,8 @@ class NASA_Anomaly(Dataset):
 
 
 class WADI(Dataset):
-    def __init__(self, root_path, flag='train', size=None, 
-                 features='M', data_path='WADI_14days_downsampled.csv', 
+    def __init__(self, root_path, data_path, flag='train', size=None,
+                 features='M',
                  target='1_AIT_001_PV', scale=True):
         # size [seq_len, label_len pred_len]
         # info
@@ -186,17 +186,24 @@ class WADI(Dataset):
     def __read_data__(self):
         scaler = MinMaxScaler()
         if self.flag == 'train':
-            df_raw = pd.read_csv('/content/drive/MyDrive/UTS/data/WADI_14days_new.csv')
+            df_raw = pd.read_csv(os.path.join(self.root_path,
+                                            self.data_path), header=1)
+            print(df_raw.head())
+            df_raw.dropna(subset=['Time'],inplace=True)
+            df_raw.fillna(0, inplace=True)
 
-#             df_raw = pd.read_csv(os.path.join(self.root_path,
-#                                             'WADI_14days_downsampled.csv'))
+            df_raw['H'] = df_raw['Time'].apply(lambda x: int(x.split(':')[0]))
+            df_raw = df_raw[df_raw['H'] < 24]
+            df_raw.drop('H', axis=1, inplace=True)
+            df_raw = df_raw[:1000]
             if self.features=='M':
-                cols_data = df_raw.columns[1:]
+                cols_data = df_raw.columns[3:-1]
                 df_data = df_raw[cols_data]
             elif self.features=='S':
                 df_data = df_raw[[self.target]]
 
-            df_stamp = df_raw[['date']]
+            df_stamp = df_raw[['Date ', 'Time']]
+            df_stamp['date'] = df_stamp['Date '] + ' ' + df_stamp['Time']
             
             if self.scale:
                 data = scaler.fit_transform(df_data.values)
@@ -206,24 +213,30 @@ class WADI(Dataset):
             self.data_x = data
             self.data_y = data
         else:
-            df_raw = pd.read_csv('/content/drive/MyDrive/UTS/data/WADI_14days_new.csv')
-#             df_raw = pd.read_csv(os.path.join(self.root_path,
-#                                             'WADI_attackdata_downsampled.csv'))
+            df_raw = pd.read_csv(os.path.join(self.root_path,
+                                              self.data_path), header=1)
+            df_raw.dropna(subset=['Time'],inplace=True)
+            df_raw.fillna(0, inplace=True)
+
+            df_raw['H'] = df_raw['Time'].apply(lambda x: int(x.split(':')[0]))
+            df_raw = df_raw[df_raw['H'] < 24]
+            df_raw.drop('H', axis=1, inplace=True)
+            df_raw = df_raw[:1000]
 
             border1s = [0, 0, 0]
             border2s = [None, len(df_raw)//4, len(df_raw)]
             border1 = border1s[self.set_type]
             border2 = border2s[self.set_type]
-
-            df_stamp = df_raw[['date']][border1:border2]
+            df_stamp = df_raw[['Date ', 'Time']][border1:border2]
+            df_stamp['date'] = df_stamp['Date '] + ' ' + df_stamp['Time']
 
             if self.features=='M':
-                cols_data = df_raw.columns[1:-1]
+                cols_data = df_raw.columns[3:-1]
                 df_data = df_raw[cols_data]
-                label = df_raw['label'].values
+                label = df_raw['Attack LABLE (1:No Attack, -1:Attack)'].values
             elif self.features=='S':
                 df_data = df_raw[[self.target]]
-                label = df_raw['label'].values
+                label = df_raw['Attack LABLE (1:No Attack, -1:Attack)'].values
 
             if self.scale:
                 data = scaler.fit_transform(df_data.values)
@@ -243,7 +256,7 @@ class WADI(Dataset):
         # df_stamp['minute'] = df_stamp.minute.map(lambda x:x//10)
         df_stamp['second'] = df_stamp.date.apply(lambda row:row.second,1)
         df_stamp['second'] = df_stamp.second.map(lambda x:x//10)
-        data_stamp = df_stamp.drop(['date'],1).values
+        data_stamp = df_stamp[['month','day','weekday','hour','minute','second']].values
         
         self.data_stamp = data_stamp
     
@@ -257,7 +270,10 @@ class WADI(Dataset):
         seq_y = self.data_y[r_begin:r_end]
         seq_x_mark = self.data_stamp[s_begin:s_end]
         seq_y_mark = self.data_stamp[r_begin:r_end]
-
+        # print(seq_x[:5])
+        # print(seq_y[:5])
+        # print(seq_x_mark[:5])
+        # print(seq_y_mark[:5])
         if self.flag == 'train':
             return seq_x, seq_y, seq_x_mark, seq_y_mark
         else:
