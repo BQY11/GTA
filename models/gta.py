@@ -92,12 +92,13 @@ class GraphTemporalEmbedding(torch.nn.Module):
         assert (kernel_size - 1) // 2
 
         self.tc_modules = torch.nn.ModuleList([])
+        self.gc_modules = torch.nn.ModuleList([])
         self.gc_module = AdaGCNConv(num_nodes, seq_len, seq_len)
         for i in range(num_levels):
             dilation_size = 2 ** i
             self.tc_modules.extend([TemporalBlock(num_nodes, num_nodes, kernel_size=kernel_size, stride=1, dilation=dilation_size,
                                         padding=(kernel_size-1) * dilation_size // 2, dropout=dropout)])
-            # self.gc_modules.extend([AdaGCNConv(num_nodes, seq_len, seq_len)])
+            self.gc_modules.extend([AdaGCNConv(num_nodes, seq_len, seq_len)])
         
         source_nodes, target_nodes = [], []
         for i in range(num_nodes):
